@@ -4,21 +4,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#123b35" />
-    <meta name="description" content="Outage Alert — a Venezuela electricity preparedness demo." />
+    <meta name="description" content="Outage Alert: a 24-hour power-outage forecast for every Venezuelan state." />
     <title>Outage Alert</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="shell">
-      <header>
-        <a class="brand" href="#" aria-label="Outage Alert home"
-          ><span class="logo">ϟ</span><span>Outage Alert<small>POWER TO PREPARE</small></span></a
-        ><button id="navigation" class="outline">Map <span aria-hidden="true">↗</span></button>
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Outage Alert home">
+          <span class="logo">ϟ</span>
+          <span><b>Outage Alert</b><small>POWER TO PREPARE</small></span>
+        </a>
+        <div class="top-actions">
+          <span id="status" class="pill"><span class="dot"></span>Loading…</span>
+          <button id="mode" class="ghost" hidden></button>
+        </div>
       </header>
-      <main id="app"></main>
+
+      <main id="app">
+        <p class="muted loading">Loading the forecast…</p>
+      </main>
+
       <footer>
-        <span>IBM Z DATATHON <b>·</b> OUTAGE ALERT</span
-        ><span>A little warning. More time to prepare.</span>
+        <span>IBM Z Datathon · Outage Alert</span>
+        <span>
+          Data: IODA internet connectivity (Georgia Tech) · Open-Meteo weather · Boundaries:
+          geoBoundaries / OCHA Venezuela / INE, CC BY 3.0 IGO
+          (<a href="assets/BOUNDARY-LICENSE.txt">attribution</a>)
+        </span>
       </footer>
     </div>
     <script type="module" src="app.js"></script>

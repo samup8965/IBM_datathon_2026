@@ -6,7 +6,7 @@ export const statuses = [
   "Grid conditions are deteriorating. Prepare essential backup power.",
   "Outage risk is critical. Prepare for possible imminent power loss.",
 ];
-const actions = {
+export const actions = {
   household: [
     ["No urgent action needed", "Keep devices normally charged"],
     ["Consider charging phone and laptop", "Charge power bank", "Save important work"],
