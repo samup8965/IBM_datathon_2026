@@ -27,6 +27,21 @@ device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is
 torch.set_num_threads(max(1, min(8, os.cpu_count() or 1)))
 
 
+def _find_nnpa():
+    """The Telum AI accelerator (NNPA) through torch_nnpa, if this machine has one."""
+    try:
+        import torch_nnpa  # noqa: F401  registers the "nnpa" device on LinuxONE
+        torch.empty(1, device="nnpa")
+        return "nnpa"
+    except Exception:
+        return None
+
+
+# Training runs on `device`. Scoring a saved model (predict.py, the API) uses the Telum
+# NNPA when available. Set OUTAGE_INFER_DEVICE=cpu to compare against the CPU.
+infer_device = os.environ.get("OUTAGE_INFER_DEVICE") or _find_nnpa() or device
+
+
 # =====================================================================================
 # 1. MODELS - both expose  .predict(X, region_ids) -> probability of an outage
 # =====================================================================================
@@ -84,10 +99,11 @@ class OutageNet(nn.Module):
 @torch.no_grad()
 def _nn_predict(model, X, r):
     model.eval()
+    dev = next(model.parameters()).device                # wherever the model lives (cpu / nnpa)
     out = []
     for i in range(0, len(X), 8192):                     # chunked so large inputs fit in memory
-        xb = torch.tensor(X[i:i + 8192], dtype=torch.float32).to(device)
-        rb = torch.tensor(r[i:i + 8192], dtype=torch.long).to(device)
+        xb = torch.tensor(X[i:i + 8192], dtype=torch.float32).to(dev)
+        rb = torch.tensor(r[i:i + 8192], dtype=torch.long).to(dev)
         out.append(torch.sigmoid(model(xb, rb)).cpu().numpy().ravel())
     return np.concatenate(out)
 
@@ -148,12 +164,19 @@ class NNEnsemble:
 
     @staticmethod
     def load(out_dir, seeds, n_numeric, n_regions):
-        models = []
+        models, dev = [], infer_device
         for s in seeds:
-            m = OutageNet(n_numeric, n_regions).to(device)
-            m.load_state_dict(torch.load(os.path.join(out_dir, f"nn_seed{s}.pt"), map_location=device))
+            m = OutageNet(n_numeric, n_regions)
+            m.load_state_dict(torch.load(os.path.join(out_dir, f"nn_seed{s}.pt"), map_location="cpu"))
             m.eval()
+            try:                                         # check the device really runs the network
+                m = m.to(dev)
+                _nn_predict(m, np.zeros((2, n_numeric), dtype="float32"), np.ones(2, dtype=int))
+            except Exception as e:
+                print(f"  could not score on {dev} ({type(e).__name__}); using cpu")
+                dev, m = "cpu", m.to("cpu")
             models.append(m)
+        print(f"  neural networks score on: {dev}")
         return NNEnsemble(models, seeds)
 
     @staticmethod

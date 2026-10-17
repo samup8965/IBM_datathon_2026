@@ -10,6 +10,7 @@ data/processed/
 data/synthetic/
 data/model_input/
 models/
+logs/
 *.h5
 *.tif
 
