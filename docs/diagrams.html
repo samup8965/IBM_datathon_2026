@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture and solution flow</title>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 12mm;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1b1b1b;
+      }
+      .page + .page {
+        break-before: page;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .sub {
+        margin: 4px 0 10px;
+        color: #555;
+        font-size: 13px;
+      }
+      .diagram {
+        text-align: center;
+      }
+      .diagram svg {
+        width: 100%;
+        height: 158mm;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <h1>Architecture</h1>
+      <p class="sub">Venezuela blackout early-warning system on IBM LinuxONE (z17)</p>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TB
+  subgraph SRC["Public data sources"]
+    direction LR
+    IODA["IODA<br/>internet connectivity<br/>all 25 states · every 10 min"]
+    OM["Open-Meteo<br/>temperature + heat index<br/>hourly"]
+  end
+
+  subgraph L1["IBM LinuxONE Community Cloud · IBM z17 (s390x)"]
+    subgraph DC["Docker container (IBM Jupyter AI/ML image)"]
+      R["Hourly refresh job<br/>download last 30 days"]
+      F["Feature pipeline<br/>outage = connectivity &lt; 90% of 2-week best<br/>history · heat · time · region · 21 states"]
+      M["Forecaster<br/>PyTorch neural-net ensemble<br/>+ gradient boosting"]
+      E["Explain<br/>top factors per state"]
+      S["Scenario engine<br/>synthetic grid + 5,000 households<br/>(calibrated to real 2022–24)"]
+      H["Household priority<br/>risk × vulnerability"]
+      C[("In-memory results<br/>risk · level · reasons · households<br/>rescored every 10 min")]
+      A["FastAPI · port 8000<br/>/health · /v1/regions · /v1/prediction<br/>/v1/households · serves the website"]
+    end
+    T{{"Telum II on-chip AI accelerator (NNPA)<br/>forecaster scoring 1.3× faster than CPU<br/>small test network 10.6× faster"}}
+  end
+
+  subgraph U["Users"]
+    direction LR
+    W["Website<br/>map + risk per state + reasons<br/>+ what to do"]
+    I["iPhone app<br/>same API"]
+  end
+
+  IODA --> R
+  OM --> R
+  R --> F --> M
+  M <-. inference .-> T
+  M --> E --> C
+  M --> H
+  S -. synthetic households .-> H
+  H --> C
+  C --> A
+  A --> W
+  A --> I
+
+  classDef src fill:#f3f3f3,stroke:#777,color:#1b1b1b
+  classDef step fill:#e8f1fd,stroke:#2f6fdc,color:#1b1b1b
+  classDef telum fill:#0f62fe,stroke:#0f62fe,color:#ffffff
+  classDef user fill:#e6f7e9,stroke:#2e9b46,color:#1b1b1b
+  class IODA,OM src
+  class R,F,M,E,S,H,C,A step
+  class T telum
+  class W,I user
+  style SRC fill:#f7f9fd,stroke:#c9d6ee
+  style L1 fill:#f7f9fd,stroke:#c9d6ee
+  style DC fill:#f7f9fd,stroke:#c9d6ee
+  style U fill:#f7f9fd,stroke:#c9d6ee
+        </pre>
+      </div>
+    </section>
+
+    <section class="page">
+      <h1>Solution flow</h1>
+      <p class="sub">What happens every hour, from raw data to a risk map</p>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TB
+  START(["Every hour on LinuxONE"]) --> D["Download latest internet connectivity (IODA)<br/>+ weather (Open-Meteo)"]
+  D --> F["Build features per state and hour<br/>recent outages · connectivity dips · heat · time · region"]
+  F --> Q{"Already below 90%<br/>of 2-week best?"}
+  Q -- Yes --> NOW["Status: outage in progress"]
+  Q -- No --> FC["Forecaster predicts chance of an outage<br/>in the next 24 h · runs on Telum II (NNPA)"]
+  FC --> LVL{"Risk level"}
+  LVL --> LO["Low"]
+  LVL --> MO["Moderate"]
+  LVL --> SE["Severe"]
+  LVL --> CR["Critical<br/>outage follows 76% of the time"]
+  NOW --> WHY["Explain why<br/>e.g. recent cuts + connectivity dip"]
+  LO --> WHY
+  MO --> WHY
+  SE --> WHY
+  CR --> WHY
+  WHY --> HH["Rank households to check first<br/>risk × vulnerability"]
+  HH --> KEEP["Keep risk, level and reasons in memory"]
+  KEEP --> API["API serves the website and app instantly"]
+  API --> APP["Website and app: map of Venezuela, risk per state,<br/>reasons and what to do (household or medical)"]
+  APP --> END(["Families prepare before the power goes out"])
+
+  classDef step fill:#e8f1fd,stroke:#2f6fdc,color:#1b1b1b
+  classDef decide fill:#fff4dc,stroke:#e6c77a,color:#1b1b1b
+  classDef telum fill:#0f62fe,stroke:#0f62fe,color:#ffffff
+  classDef alert fill:#fdeeee,stroke:#d33a3a,color:#1b1b1b
+  classDef ends fill:#e6f7e9,stroke:#2e9b46,color:#1b1b1b
+  class D,F,WHY,HH,KEEP,API,APP step
+  class Q,LVL,LO,MO,SE decide
+  class FC telum
+  class NOW,CR alert
+  class START,END ends
+        </pre>
+      </div>
+    </section>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "base",
+        flowchart: { curve: "basis", htmlLabels: true },
+        themeVariables: { fontFamily: "Arial, Helvetica, sans-serif", fontSize: "13px" },
+      });
+      await mermaid.run();
+      document.body.dataset.ready = "yes";
+    </script>
+  </body>
+</html>
