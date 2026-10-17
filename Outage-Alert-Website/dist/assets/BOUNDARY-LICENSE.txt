@@ -1,0 +1,15 @@
+Venezuela ADM1 boundaries
+
+Source: OCHA Venezuela / Instituto Nacional de Estadística, distributed by geoBoundaries (William & Mary geoLab).
+Dataset: VEN-ADM1-42786344, 25 administrative regions, year represented: 2020.
+Pinned geoBoundaries revision: 9469f09; build date: December 12, 2023.
+File: geoBoundaries-VEN-ADM1_simplified.geojson (bundled without geometry changes).
+Source metadata: https://www.geoboundaries.org/api/current/gbOpen/VEN/ADM1/
+Original source: https://data.humdata.org/dataset/venezuela-administrative-level-0-1-and-2-boundaries
+Download: https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/VEN/ADM1/geoBoundaries-VEN-ADM1_simplified.geojson
+
+License identified in the source metadata:
+Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)
+https://creativecommons.org/licenses/by/3.0/igo/
+
+The app projects the supplied geometry for display. The regional risk colors and probabilities are fictional demo values, not supplied by the boundary data authors. No endorsement by those authors is implied.
