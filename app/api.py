@@ -15,7 +15,11 @@ Endpoints
   GET /health                        model loaded?, scoring device (nnpa = Telum), data freshness
   GET /v1/regions                    every state, for the map (ISO codes, e.g. VE-S = Táchira)
   GET /v1/prediction?region=VE-A     one state, in the apps' Prediction format
+  GET /v1/households?region=VE-S     who to check on first: households by risk x vulnerability
+  GET /v1/households/summary         per state: medical-dependent households and priority tiers
   GET /docs                          interactive documentation
+
+The households are synthetic (see src/households.py).
 """
 import os
 import threading
@@ -27,6 +31,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src import households as hh
 from src.model import OutageModel
 from src.regions import BY_ISO
 from src.serving import build_snapshot
@@ -40,23 +45,27 @@ REFRESH_SECONDS = int(os.environ.get("OUTAGE_REFRESH_SECONDS", "600"))
 WEBSITE_DIR = ROOT / "Outage-Alert-Website" / "dist"
 
 MODEL = OutageModel.load(OUT_DIR)            # loaded once, when the server starts
+HOUSEHOLDS = hh.load_households() if hh.HOUSEHOLDS_PATH.exists() else None
 app = FastAPI(title="Outage Alert: Venezuela power-outage risk", version="1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
-_state = {"regions": [], "by_id": {}, "computed_at": None, "last_error": None}
+_state = {"regions": [], "by_id": {}, "ranked": None, "household_summary": [],
+          "computed_at": None, "last_error": None}
 _lock = threading.Lock()
 
 
 def _refresh():
-    """Score every state; on failure keep serving the last good results."""
+    """Score every state and re-rank households; on failure keep the last good results."""
     try:
         regions = build_snapshot(MODEL, DATA_DIR)
+        ranked = hh.rank(HOUSEHOLDS, regions) if HOUSEHOLDS is not None else None
     except Exception as e:
         _state["last_error"] = f"{type(e).__name__}: {e}"
         print(f"refresh failed, keeping previous results: {_state['last_error']}")
         return
     with _lock:
-        _state.update(regions=regions, by_id={r["region_id"]: r for r in regions},
+        _state.update(regions=regions, by_id={r["region_id"]: r for r in regions}, ranked=ranked,
+                      household_summary=hh.summary(ranked, regions) if ranked is not None else [],
                       computed_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                       last_error=None)
 
@@ -104,6 +113,38 @@ def prediction(region: str = Query(..., description="ISO code, e.g. VE-A for Dis
     if record is None or record.get("status") != "ok":
         raise HTTPException(status_code=404, detail=f"not enough data to forecast {BY_ISO[code][1]}")
     return record
+
+
+def _ranked():
+    if _state["ranked"] is None:
+        raise HTTPException(status_code=503, detail="no household data (run scripts/generate_data.py)")
+    return _state["ranked"]
+
+
+@app.get("/v1/households/summary")
+def household_summary():
+    """Per state, most urgent first: households, medical-dependent households, and how many
+    fall in each priority tier (urgent / high / watch / low) right now. Synthetic households."""
+    _ranked()
+    return {"synthetic": True, "regions": _state["household_summary"]}
+
+
+@app.get("/v1/households")
+def households(region: str | None = Query(None, description="ISO code, e.g. VE-S; all states if left out"),
+               tier: str | None = Query(None, description="only this tier: urgent, high, watch or low"),
+               limit: int = Query(50, ge=1, le=500)):
+    """Households ranked by priority = state outage risk x vulnerability, highest first,
+    each with its reasons. Synthetic households."""
+    ranked = _ranked()
+    if region:
+        code = region.strip().upper()
+        if code not in BY_ISO:
+            raise HTTPException(status_code=404, detail=f"unknown region '{region}' (use an ISO code like VE-S)")
+        ranked = ranked[ranked.region_id == code]
+    if tier:
+        ranked = ranked[ranked.tier == tier.strip().lower()]
+    return {"synthetic": True, "region": region, "tier": tier, "total": int(len(ranked)),
+            "households": hh.records(ranked.head(limit))}
 
 
 # The website last, so the API routes above take precedence over its files
