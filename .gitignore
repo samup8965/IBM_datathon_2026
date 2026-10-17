@@ -8,6 +8,7 @@ __pycache__/
 data/raw/
 data/processed/
 data/synthetic/
+data/model_input/
 models/
 *.h5
 *.tif

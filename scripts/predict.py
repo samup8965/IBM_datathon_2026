@@ -1,7 +1,7 @@
 """
-predict.py - get the CURRENT risk for every region, using the model trained by train.py.
+predict.py - get the CURRENT risk for every region, using the model trained by scripts/train.py.
 
-    python predict.py --data-dir data --out-dir model_out
+    uv run python scripts/predict.py --data-dir data/model_input --out-dir models
 
 Run this whenever your CSV files have been updated. It needs no retraining.
 The LAST timestamp in your history file is treated as "now", so keep that file up to date.
@@ -13,7 +13,8 @@ import os
 
 import pandas as pd
 
-from outage_core import OutageModel, build_dataset, save_risk
+from src.features import build_dataset
+from src.model import OutageModel, save_risk
 
 
 def main(data_dir, out_dir):
@@ -36,7 +37,7 @@ def main(data_dir, out_dir):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Score every region with the trained model.")
-    ap.add_argument("--data-dir", default="data", help="folder containing your CSV files")
-    ap.add_argument("--out-dir", default="model_out", help="folder holding the trained model")
+    ap.add_argument("--data-dir", default="data/model_input", help="folder containing your CSV files")
+    ap.add_argument("--out-dir", default="models", help="folder holding the trained model")
     args = ap.parse_args()
     main(os.path.expanduser(args.data_dir), os.path.expanduser(args.out_dir))

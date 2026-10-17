@@ -1,5 +1,5 @@
 """
-outage_config.py - THE ONLY FILE YOU NEED TO EDIT.
+src/config.py - THE ONLY FILE YOU NEED TO EDIT.
 
 Tell the program where each dataset is and what its columns are called.
 Every file must have a time column; regional files also need a region column.

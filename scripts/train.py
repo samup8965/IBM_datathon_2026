@@ -1,10 +1,10 @@
 """
 train.py - teach the model from your data. Run this once (and again when you have much more data).
 
-    python train.py --data-dir data --out-dir model_out
+    uv run python scripts/train.py --data-dir data/model_input --out-dir models
 
 What it does:
-  1. loads and combines all your datasets (see outage_config.py)
+  1. loads and combines all your datasets (see src/config.py)
   2. splits the data BY TIME: oldest 70% train, next 15% validation, newest 15% test
   3. trains a PyTorch neural-network ensemble and a gradient-boosting model
   4. blends them (the blend weights are chosen on validation data)
@@ -28,11 +28,26 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler
 
-import outage_config as C
-from outage_core import (
-    GBMModel, NNEnsemble, OutageModel, Tee, build_dataset, count_events, risk_cutoffs,
-    risk_tier, safe_auc, safe_ap, save_risk, device,
+from src import config as C
+from src.features import build_dataset, count_events
+from src.model import (
+    GBMModel, NNEnsemble, OutageModel, risk_cutoffs, risk_tier, safe_auc, safe_ap, save_risk, device,
 )
+
+
+class Tee:
+    """Copy everything printed to a text file as well, so the training report is kept."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, s):
+        for x in self.streams:
+            x.write(s)
+
+    def flush(self):
+        for x in self.streams:
+            x.flush()
 
 
 def report(name, y, p, thr):
@@ -174,8 +189,8 @@ def main(data_dir, out_dir):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Train the outage risk model.")
-    ap.add_argument("--data-dir", default="data", help="folder containing your CSV files")
-    ap.add_argument("--out-dir", default="model_out", help="folder for the trained model and results")
+    ap.add_argument("--data-dir", default="data/model_input", help="folder containing your CSV files")
+    ap.add_argument("--out-dir", default="models", help="folder for the trained model and results")
     args = ap.parse_args()
     data_dir, out_dir = os.path.expanduser(args.data_dir), os.path.expanduser(args.out_dir)
     os.makedirs(out_dir, exist_ok=True)
