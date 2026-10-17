@@ -1,0 +1,11 @@
+  neural networks score on: nnpa
+Loading datasets
+  [history] 329910 rows, 21 regions, 2025-01-01 00:00:00 -> 2026-10-17 13:00:00
+  [history] time step 0 days 01:00:00; horizon = 24 rows = 1 days 00:00:00; 0.0% of steps irregular
+  [heat] matched 100.0% of rows
+  [net] matched 100.0% of rows
+
+Trained forecaster: 5 neural networks scoring 50,000 state-hours
+  on nnpa:0:     78.6 ms
+  on cpu :    102.4 ms   (1.3x)
+  largest difference between the two: 1.34e-03 (non-zero: the NNPA did the work)

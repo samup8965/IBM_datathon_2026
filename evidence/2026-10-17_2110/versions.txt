@@ -1,0 +1,6 @@
+python 3.12.15
+torch 2.11.0+cpu
+numpy 2.0.2
+pandas 3.0.6
+scikit-learn 1.9.0
+joblib 1.6.0

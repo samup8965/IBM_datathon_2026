@@ -1,0 +1,191 @@
+[
+  {
+    "region":"yaracuy",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":1.0,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":1298,
+    "top_factors":"outage_roll168; outage_roll24"
+  },
+  {
+    "region":"t\u00e1chira",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":1.0,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":1091,
+    "top_factors":"outage_roll168; outage_roll24"
+  },
+  {
+    "region":"barinas",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":1.0,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":1353,
+    "top_factors":"outage_roll168; outage_roll24"
+  },
+  {
+    "region":"monagas",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8462,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":1619,
+    "top_factors":"net_connectivity; outage_roll168; outage_roll24"
+  },
+  {
+    "region":"aragua",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8462,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":359,
+    "top_factors":"outage_roll168; net_connectivity; outage_roll24"
+  },
+  {
+    "region":"lara",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8462,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":469,
+    "top_factors":"net_connectivity; outage_roll168; outage_roll24"
+  },
+  {
+    "region":"gu\u00e1rico",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8462,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":829,
+    "top_factors":"outage_roll24; net_connectivity; outage_roll168"
+  },
+  {
+    "region":"cojedes",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8152,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":356,
+    "top_factors":"outage_roll168; net_connectivity; outage_roll24"
+  },
+  {
+    "region":"carabobo",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.8152,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":362,
+    "top_factors":"outage_roll168; outage_roll24; net_connectivity"
+  },
+  {
+    "region":"sucre",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.6611,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":435,
+    "top_factors":"outage_roll168; net_connectivity; outage_roll24"
+  },
+  {
+    "region":"miranda",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.6458,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":280,
+    "top_factors":"net_connectivity; outage_roll168; outage_roll24"
+  },
+  {
+    "region":"nueva esparta",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.6458,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":672,
+    "top_factors":"net_connectivity; outage_roll24; outage_roll168"
+  },
+  {
+    "region":"trujillo",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.6406,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":930,
+    "top_factors":"net_connectivity; outage_roll168; outage_roll24"
+  },
+  {
+    "region":"anzo\u00e1tegui",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.6406,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":396,
+    "top_factors":"net_connectivity; outage_roll24; rows_since_outage"
+  },
+  {
+    "region":"portuguesa",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.4954,
+    "risk_level":"Outage in progress",
+    "confidence":"High",
+    "history_events":610,
+    "top_factors":"net_connectivity; outage_roll168; heat_heat_index_max24"
+  },
+  {
+    "region":"falc\u00f3n",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.4954,
+    "risk_level":"Critical",
+    "confidence":"High",
+    "history_events":240,
+    "top_factors":"outage_roll168; net_connectivity; outage_roll24"
+  },
+  {
+    "region":"bol\u00edvar",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.3867,
+    "risk_level":"Critical",
+    "confidence":"High",
+    "history_events":565,
+    "top_factors":"heat_heat_index_max24; heat_heat_index_mean72; rows_since_outage"
+  },
+  {
+    "region":"vargas",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.2849,
+    "risk_level":"Severe",
+    "confidence":"High",
+    "history_events":704,
+    "top_factors":"heat_heat_index_max24; month_sin; heat_heat_index_mean72"
+  },
+  {
+    "region":"m\u00e9rida",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.1673,
+    "risk_level":"Severe",
+    "confidence":"High",
+    "history_events":732,
+    "top_factors":"net_connectivity; rows_since_outage; month_sin"
+  },
+  {
+    "region":"distrito capital",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.0608,
+    "risk_level":"Low",
+    "confidence":"High",
+    "history_events":137,
+    "top_factors":"month_sin"
+  },
+  {
+    "region":"zulia",
+    "timestamp":"2026-10-17 13:00:00",
+    "risk_probability":0.0608,
+    "risk_level":"Low",
+    "confidence":"High",
+    "history_events":198,
+    "top_factors":"month_sin; heat_heat_index_max24"
+  }
+]

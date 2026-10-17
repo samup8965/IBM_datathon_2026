@@ -1,0 +1,47 @@
+{
+  "machine": {
+    "python": "3.12.15",
+    "arch": "s390x",
+    "cpu": "processor 0: version = FF,  identification = 07DFD8,  machine = 9175"
+  },
+  "pytorch": {
+    "version": "2.11.0+cpu",
+    "torch_nnpa": "1.5.0+gite861108",
+    "nnpa_device": "nnpa",
+    "mlp_cpu": {
+      "ms_per_batch": 1.49
+    },
+    "mlp_nnpa": {
+      "ms_per_batch": 0.14
+    },
+    "mlp_check": {
+      "max_abs_difference": 0.001182839274406433,
+      "nnpa_did_the_work": true,
+      "speedup_vs_cpu": 10.64
+    },
+    "lstm_cpu": {
+      "ms_per_batch": 739.04
+    },
+    "lstm_nnpa": {
+      "ms_per_batch": 768.16
+    },
+    "lstm_check": {
+      "max_abs_difference": 0.00039255619049072266,
+      "nnpa_did_the_work": true,
+      "speedup_vs_cpu": 0.96
+    }
+  },
+  "tensorflow": {
+    "version": "2.18.1",
+    "devices": [
+      "CPU"
+    ],
+    "nnpa_device": null,
+    "mlp_cpu": {
+      "ms_per_batch": 2.07
+    },
+    "lstm_cpu": {
+      "ms_per_batch": 233.09
+    }
+  }
+}

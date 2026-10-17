@@ -1,0 +1,6 @@
+Leaving out low-signal states: ['Amazonas', 'Apure', 'Delta Amacuro', 'Dependencias Federales']
+  data/model_input/synthetic: 552,384 rows, 21 states, 2022-01-01 00:00:00 -> 2024-12-31 23:00:00, outage share 11.42%
+  real connectivity missing for 0.9% of state-hours (counted as no outage, connectivity left blank)
+  data/model_input/real: 329,910 rows, 21 states, 2025-01-01 00:00:00 -> 2026-10-17 13:00:00, outage share 17.32%
+  real connectivity missing for 3.8% of state-hours (counted as no outage, connectivity left blank)
+  data/model_input/real_train: 522,732 rows, 21 states, 2022-02-28 20:00:00 -> 2024-12-31 23:00:00, outage share 12.38%

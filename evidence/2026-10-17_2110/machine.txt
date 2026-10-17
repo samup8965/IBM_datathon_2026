@@ -1,0 +1,10 @@
+date (UTC): Sat Oct 17 21:10:42 UTC 2026
+Linux sams-instance 6.8.0-147-generic #147-Ubuntu SMP Thu Sep 24 10:59:43 UTC 2026 s390x GNU/Linux
+processor 0: version = FF,  identification = 07DFD8,  machine = 9175
+Manufacturer:         IBM             
+Type:                 9175
+Model:                702              ME1             
+LPAR Name:            IBM20   
+LPAR CPUs Total:      40
+VM00 Name:            L5014F8F
+VM00 Control Program: z/VM    7.3.0   

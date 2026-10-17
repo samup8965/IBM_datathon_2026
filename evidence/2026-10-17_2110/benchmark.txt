@@ -1,0 +1,17 @@
+Machine: {'python': '3.12.15', 'arch': 's390x', 'cpu': 'processor 0: version = FF,  identification = 07DFD8,  machine = 9175'}
+
+== pytorch 2.11.0+cpu | NNPA device: nnpa
+   torch_nnpa: 1.5.0+gite861108
+   mlp  on cpu :     1.49 ms per batch of 4096
+   mlp  on nnpa:     0.14 ms per batch of 4096
+   mlp  NNPA used? YES - answers differ slightly, as expected from NNPA's 16-bit math (max diff 1.18e-03, 10.64x vs CPU)
+   lstm on cpu :   739.04 ms per batch of 4096
+   lstm on nnpa:   768.16 ms per batch of 4096
+   lstm NNPA used? YES - answers differ slightly, as expected from NNPA's 16-bit math (max diff 3.93e-04, 0.96x vs CPU)
+
+== tensorflow 2.18.1 | NNPA device: None
+   devices: ['CPU']
+   mlp  on cpu :     2.07 ms per batch of 4096
+   lstm on cpu :   233.09 ms per batch of 4096
+
+Saved evidence/2026-10-17_2110/benchmark.json

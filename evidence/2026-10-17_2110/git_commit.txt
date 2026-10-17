@@ -1,0 +1,3 @@
+commit c3c0c9a84baa7e9cdc6b733c5ae90b70ffd21d94
+author Samuel Parra Centeno, Sat Oct 17 22:07:04 2026 +0100
+Add LinuxONE evidence collector; fix data-age to use Venezuela time

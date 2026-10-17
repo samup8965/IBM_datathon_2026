@@ -1,0 +1,12 @@
+Python 3.12.15
+ibm-zdnn-plugin              2.3.0
+numpy                        2.0.2
+pandas                       3.0.6
+scikit-learn                 1.9.0
+sklearn-pandas               2.2.0
+tensorflow                   2.18.1
+tensorflow-io-gcs-filesystem 0.37.1
+tensorflow-text              2.18.1
+torch                        2.11.0+cpu
+torch_nnpa                   1.5.0+gite861108
+xgboost                      3.4.1

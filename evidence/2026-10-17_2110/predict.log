@@ -1,0 +1,33 @@
+  neural networks score on: nnpa
+Loading datasets
+  [history] 329910 rows, 21 regions, 2025-01-01 00:00:00 -> 2026-10-17 13:00:00
+  [history] time step 0 days 01:00:00; horizon = 24 rows = 1 days 00:00:00; 0.0% of steps irregular
+  [heat] matched 100.0% of rows
+  [net] matched 100.0% of rows
+
+Data is current up to 2026-10-17 13:00:00 (0 days 04:10:35 ago); risk = chance of an outage starting in the next 24 rows.
+
+          region           timestamp  risk_probability         risk_level confidence  history_events
+         yaracuy 2026-10-17 13:00:00            1.0000 Outage in progress       High            1298
+         táchira 2026-10-17 13:00:00            1.0000 Outage in progress       High            1091
+         barinas 2026-10-17 13:00:00            1.0000 Outage in progress       High            1353
+         monagas 2026-10-17 13:00:00            0.8462 Outage in progress       High            1619
+          aragua 2026-10-17 13:00:00            0.8462 Outage in progress       High             359
+            lara 2026-10-17 13:00:00            0.8462 Outage in progress       High             469
+         guárico 2026-10-17 13:00:00            0.8462 Outage in progress       High             829
+         cojedes 2026-10-17 13:00:00            0.8152 Outage in progress       High             356
+        carabobo 2026-10-17 13:00:00            0.8152 Outage in progress       High             362
+           sucre 2026-10-17 13:00:00            0.6611 Outage in progress       High             435
+         miranda 2026-10-17 13:00:00            0.6458 Outage in progress       High             280
+   nueva esparta 2026-10-17 13:00:00            0.6458 Outage in progress       High             672
+        trujillo 2026-10-17 13:00:00            0.6406 Outage in progress       High             930
+      anzoátegui 2026-10-17 13:00:00            0.6406 Outage in progress       High             396
+      portuguesa 2026-10-17 13:00:00            0.4954 Outage in progress       High             610
+          falcón 2026-10-17 13:00:00            0.4954           Critical       High             240
+         bolívar 2026-10-17 13:00:00            0.3867           Critical       High             565
+          vargas 2026-10-17 13:00:00            0.2849             Severe       High             704
+          mérida 2026-10-17 13:00:00            0.1673             Severe       High             732
+distrito capital 2026-10-17 13:00:00            0.0608                Low       High             137
+           zulia 2026-10-17 13:00:00            0.0608                Low       High             198
+
+Saved risk_latest.csv and risk_latest.json in models/
