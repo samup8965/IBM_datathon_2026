@@ -37,15 +37,14 @@ CONFIG = {
     #   rel_to_median=W       value divided by its own median over the previous W rows
     #                         (a drop shows up as a number below 1 - good for connectivity)
     #   tolerance="10D"       optional: how stale this dataset's readings may be
+    # Only inputs that exist for BOTH the synthetic training data and the real test data
+    # (scripts/export_model_input.py). Temperature (not simulated) and reservoir (no real
+    # data) are left out; add them back here if both datasets get them.
     "sources": [
-        {"name": "temp", "path": "temperature.csv", "time": "timestamp", "region": "region",
-         "cols": ["temperature"], "roll": [("mean", 24), ("max", 24)], "diff": [24]},
         {"name": "heat", "path": "heat_index.csv", "time": "timestamp", "region": "region",
          "cols": ["heat_index"], "roll": [("max", 24), ("mean", 72)], "diff": [24]},
         {"name": "net", "path": "connectivity.csv", "time": "timestamp", "region": "region",
          "cols": ["connectivity"], "roll": [("min", 24)], "rel_to_median": 168},
-        {"name": "res", "path": "reservoir.csv", "time": "timestamp", "region": None,
-         "cols": ["height"], "diff": [168], "tolerance": "10D"},
     ],
 
     "lags": [1, 6, 24],      # past outage values, in rows

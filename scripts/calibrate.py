@@ -5,8 +5,12 @@ reads so the synthetic data follows real Venezuelan patterns. Only data up to
 --until is used, so the months after it stay unseen for validating the model.
 
 An "outage hour" is an hour where a state's ping-slash24 connectivity is below
-DROP_THRESHOLD of its usual level for that hour of day (median of the previous
-BASELINE_DAYS days). Blank IODA values are missing data, not outages.
+DROP_THRESHOLD of its best level over the previous BASELINE_DAYS days (a high
+percentile, so one odd spike does not set the bar). Comparing with the best level,
+not the usual level, keeps chronic daily cuts visible: if a state loses power every
+night, "usual" would absorb those cuts and hide them. Only past data sets the bar,
+so the same definition works for live data. Blank IODA values are missing data,
+not outages.
 
 Usage (from the repo root):
     uv run python scripts/calibrate.py
@@ -28,17 +32,20 @@ IODA_PATH = ROOT / "data" / "raw" / "ioda_ve.csv.gz"
 WEATHER_PATH = ROOT / "data" / "raw" / "weather_ve.csv"
 OUT_PATH = ROOT / "data" / "calibration.json"
 
-DROP_THRESHOLD = 0.8  # outage hour = connectivity below 80% of its usual level
-BASELINE_DAYS = 7     # usual level = median of the same hour over the previous 7 days
+DROP_THRESHOLD = 0.9      # outage hour = connectivity below 90% of its best recent level
+BASELINE_DAYS = 14        # best level = BASELINE_QUANTILE of the previous 14 days
+BASELINE_QUANTILE = 0.95  # (at 95% even stable Caracas is "out" ~17% of hours: too noisy;
+                          #  at 90% Caracas sits at ~5% while Táchira/Barinas reach ~30%)
 HOT_QUANTILE = 0.75   # hot day = daily max heat index in the state's top 25%
-MIN_BLOCKS = 20       # below this many address blocks one block going quiet looks like
-                      # an outage, so the state is flagged low_signal and left out of averages
+MIN_BLOCKS = 50       # below this many address blocks a few blocks going quiet looks like
+                      # an outage (at 27 blocks, 3 quiet ones cross the 90% line), so the
+                      # state is flagged low_signal and left out of averages and the model
 HEAT_PRIOR_DAYS = 50  # a state's own heat effect counts fully only with many outage days;
                       # with fewer it is pulled toward the national value
 
 
 def load_connectivity_ratio(until):
-    """Hourly connectivity / usual level, as an (hour x state) table in Venezuela time."""
+    """Hourly connectivity / best recent level, as an (hour x state) table in Venezuela time."""
     df = pd.read_csv(IODA_PATH, usecols=["state", "datasource", "timestamp_vet", "value"],
                      parse_dates=["timestamp_vet"])
     df = df[(df.datasource == "ping-slash24") & (df.timestamp_vet < until)]
@@ -46,10 +53,9 @@ def load_connectivity_ratio(until):
     hourly = df.groupby(["hour", "state"]).value.mean().unstack("state")
     hourly = hourly.reindex(pd.date_range(hourly.index.min(), hourly.index.max(), freq="h"))
 
-    # Compare each hour with the same hour of day on previous days, so the normal
-    # day/night rhythm is not mistaken for outages.
-    baseline = hourly.groupby(hourly.index.hour).transform(
-        lambda g: g.rolling(BASELINE_DAYS, min_periods=4).median().shift(1))
+    hours = 24 * BASELINE_DAYS
+    baseline = (hourly.rolling(hours, min_periods=hours // 2)
+                .quantile(BASELINE_QUANTILE).shift(1))
     return hourly / baseline, hourly
 
 
@@ -169,6 +175,7 @@ def main():
             "calibration_until": args.until,
             "drop_threshold": DROP_THRESHOLD,
             "baseline_days": BASELINE_DAYS,
+            "baseline_quantile": BASELINE_QUANTILE,
             "hot_quantile": HOT_QUANTILE,
             "min_blocks": MIN_BLOCKS,
             "heat_prior_days": HEAT_PRIOR_DAYS,

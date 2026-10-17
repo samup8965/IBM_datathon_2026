@@ -3,6 +3,10 @@ train.py - teach the model from your data. Run this once (and again when you hav
 
     uv run python scripts/train.py --data-dir data/model_input --out-dir models
 
+    # train on synthetic data, test on real data the model never saw
+    uv run python scripts/train.py --data-dir data/model_input/synthetic \
+        --test-dir data/model_input/real --out-dir models
+
 What it does:
   1. loads and combines all your datasets (see src/config.py)
   2. splits the data BY TIME: oldest 70% train, next 15% validation, newest 15% test
@@ -79,22 +83,43 @@ def permutation_importance(predict_fn, X, r, y, names, n=5000, repeats=3, seed=0
     return pd.DataFrame(rows, columns=["feature", "pr_auc_drop"]).sort_values("pr_auc_drop", ascending=False)
 
 
-def main(data_dir, out_dir):
-    print(f"Python {platform.python_version()} | torch {torch.__version__} on {device} | "
-          f"scikit-learn {sklearn.__version__}")
-    df, feature_cols, region_map = build_dataset(data_dir)
+def add_yesterday(df, horizon):
+    """Baseline input: the label at this hour yesterday, which is already known by now."""
+    df["label_yesterday"] = df.groupby("region")["label"].shift(max(24, horizon))
+    return df
 
-    # rows the model may learn from: the future is known, and (optionally) power is currently on
+
+def usable(df):
+    """Rows the model may learn from: the future is known, and (optionally) power is currently on."""
     lab = df[df["label"].notna()]
     if C.CONFIG["exclude_ongoing"]:
         lab = lab[lab["outage_now"] == 0]
+    return lab
 
-    t1 = lab["timestamp"].quantile(C.TRAIN_FRAC)
-    t2 = lab["timestamp"].quantile(C.TRAIN_FRAC + C.VAL_FRAC)
-    tr = lab[lab.timestamp <= t1]
-    va = lab[(lab.timestamp > t1) & (lab.timestamp <= t2)]
-    te = lab[lab.timestamp > t2]
+
+def main(data_dir, out_dir, test_dir=None):
+    print(f"Python {platform.python_version()} | torch {torch.__version__} on {device} | "
+          f"scikit-learn {sklearn.__version__}")
     H = C.CONFIG["horizon"]
+    df, feature_cols, region_map = build_dataset(data_dir)
+    lab = usable(add_yesterday(df, H))
+
+    if test_dir:
+        # Train and validate on --data-dir (split by time); test on ALL of --test-dir,
+        # e.g. train on synthetic data and test on real data the model never saw
+        t1 = lab["timestamp"].quantile(C.TRAIN_FRAC / (C.TRAIN_FRAC + C.VAL_FRAC))
+        tr = lab[lab.timestamp <= t1]
+        va = lab[lab.timestamp > t1]
+        print(f"\nTest data: {test_dir}")
+        test_df, _, _ = build_dataset(test_dir, region_map=region_map)
+        te = usable(add_yesterday(test_df, H))
+    else:
+        t1 = lab["timestamp"].quantile(C.TRAIN_FRAC)
+        t2 = lab["timestamp"].quantile(C.TRAIN_FRAC + C.VAL_FRAC)
+        tr = lab[lab.timestamp <= t1]
+        va = lab[(lab.timestamp > t1) & (lab.timestamp <= t2)]
+        te = lab[lab.timestamp > t2]
+        test_df = df
     print(f"\n{len(tr)} train / {len(va)} validation / {len(te)} test rows | "
           f"{len(region_map)} regions | {len(feature_cols)} features")
     for name, d in [("train", tr), ("validation", va), ("test", te)]:
@@ -144,8 +169,14 @@ def main(data_dir, out_dir):
     # ---- honest evaluation on the untouched test set
     print("\nModel comparison (test set)")
     print(f"{'base rate (the floor)':<32} PR-AUC {yte.mean():.3f}")
-    print(f"{'recent outages (roll24)':<32} PR-AUC {safe_ap(yte, te['outage_roll24'].values):.3f} | "
-          f"ROC-AUC {safe_auc(yte, te['outage_roll24'].values):.3f}")
+    region_rate = tr.groupby("region")["label"].mean()
+    baselines = [
+        ("recent outages (roll24)", te["outage_roll24"].values),
+        ("regional average", te["region"].map(region_rate).fillna(tr["label"].mean()).values),
+        ("same as yesterday", te["label_yesterday"].fillna(0).values),
+    ]
+    for name, p in baselines:
+        print(f"{name:<32} PR-AUC {safe_ap(yte, p):.3f} | ROC-AUC {safe_auc(yte, p):.3f}")
     for name, p in [("gradient boosting alone", gbm.predict(Xte, rte)),
                     ("PyTorch ensemble alone", nn_ens.predict(Xte, rte)),
                     (f"blend (NN share {w_nn:.2f}), raw", model.raw(Xte, rte))]:
@@ -178,7 +209,7 @@ def main(data_dir, out_dir):
 
     # ---- current risk per region, then save everything
     print("\nCurrent risk by region")
-    save_risk(model.score_latest(df), out_dir)
+    save_risk(model.score_latest(test_df), out_dir)
     model.save(out_dir)
     with open(os.path.join(out_dir, "versions.txt"), "w") as f:
         f.write(f"python {platform.python_version()}\ntorch {torch.__version__}\n"
@@ -191,13 +222,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Train the outage risk model.")
     ap.add_argument("--data-dir", default="data/model_input", help="folder containing your CSV files")
     ap.add_argument("--out-dir", default="models", help="folder for the trained model and results")
+    ap.add_argument("--test-dir", default=None,
+                    help="optional: test on this folder instead of the newest part of --data-dir")
     args = ap.parse_args()
     data_dir, out_dir = os.path.expanduser(args.data_dir), os.path.expanduser(args.out_dir)
     os.makedirs(out_dir, exist_ok=True)
     log = open(os.path.join(out_dir, "training_report.txt"), "w")
     sys.stdout = Tee(sys.__stdout__, log)           # print to the screen AND keep a copy
     try:
-        main(data_dir, out_dir)
+        main(data_dir, out_dir, os.path.expanduser(args.test_dir) if args.test_dir else None)
     finally:
         sys.stdout = sys.__stdout__
         log.close()
