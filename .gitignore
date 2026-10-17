@@ -1,0 +1,16 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Data and models live on the server (copied with scp), not in git
+data/raw/
+data/processed/
+models/
+*.h5
+*.tif
+
+# Secrets
+.env
+*token*

@@ -1,0 +1,27 @@
+[project]
+name = "ibm-datathon-2026"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    # blackmarblepy (data group) needs pandas<3
+    "pandas>=2.2,<3",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+data = [
+    "blackmarblepy==2026.6.1",
+    "geopandas>=1.2.0",
+    "rasterio>=1.5.2",
+    "rioxarray>=0.17.0",
+]
+dev = [
+    "ipykernel>=7.4.0",
+]
+
+[tool.uv]
+# `uv sync` installs everything on laptops. The LinuxONE image skips the
+# geospatial `data` group: `uv sync --frozen --no-default-groups`
+default-groups = ["dev", "data"]
