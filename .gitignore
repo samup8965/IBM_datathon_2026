@@ -7,6 +7,7 @@ __pycache__/
 # Data and models live on the server (copied with scp), not in git
 data/raw/
 data/processed/
+data/synthetic/
 models/
 *.h5
 *.tif
