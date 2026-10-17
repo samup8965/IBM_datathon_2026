@@ -13,6 +13,7 @@ import os
 
 import pandas as pd
 
+from src import config as C
 from src.features import build_dataset
 from src.model import OutageModel, save_risk
 
@@ -23,7 +24,7 @@ def main(data_dir, out_dir):
     out = model.score_latest(df)
 
     newest = out["timestamp"].max()
-    age = pd.Timestamp.now("UTC").tz_localize(None) - newest
+    age = pd.Timestamp.now(C.CONFIG.get("timezone", "UTC")).tz_localize(None) - newest
     print(f"\nData is current up to {newest} ({str(age).split('.')[0]} ago); "
           f"risk = chance of an outage starting in the next {model.horizon} rows.")
     if age > pd.Timedelta("2D"):

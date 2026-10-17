@@ -20,6 +20,10 @@ CONFIG = {
     # (missing hours are assumed to have NO outage). None = use the rows exactly as given.
     "regularize_freq": None,
 
+    # Time zone of the timestamps in the CSVs (ours are Venezuela time). Used to say how
+    # old the newest data is.
+    "timezone": "America/Caracas",
+
     # HISTORY = the base table: it decides which (time, region) rows the model sees.
     # Two formats:
     #   "grid"  : one row per (timestamp, region) with a 0/1 outage column
