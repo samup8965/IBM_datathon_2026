@@ -158,6 +158,11 @@ class NNEnsemble:
     def predict(self, X, r):
         return np.mean([_nn_predict(m, X, r) for m in self.models], axis=0)
 
+    @property
+    def device(self):
+        """Where the networks run: 'nnpa' = the Telum AI accelerator."""
+        return next(self.models[0].parameters()).device.type
+
     def save(self, out_dir):
         for s, m in zip(self.seeds, self.models):
             torch.save(m.state_dict(), os.path.join(out_dir, f"nn_seed{s}.pt"))

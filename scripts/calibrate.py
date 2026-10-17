@@ -50,6 +50,11 @@ def load_connectivity_ratio(until):
                      parse_dates=["timestamp_vet"])
     df = df[(df.datasource == "ping-slash24") & (df.timestamp_vet < until)]
     df["hour"] = df.timestamp_vet.dt.floor("h")
+    # The newest hour is often still filling up when the data is downloaded; with fewer
+    # readings than usual it would look like a drop everywhere, so leave it out.
+    readings = df.groupby("hour").value.count()
+    if len(readings) > 24 and readings.iloc[-1] < readings.iloc[-25:-1].median():
+        df = df[df.hour < readings.index[-1]]
     hourly = df.groupby(["hour", "state"]).value.mean().unstack("state")
     hourly = hourly.reindex(pd.date_range(hourly.index.min(), hourly.index.max(), freq="h"))
 

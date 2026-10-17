@@ -1,73 +1,107 @@
 """
-api.py - lets your app ask the model for risk levels over HTTP. Run from the repo root:
+api.py - the backend for Outage Alert. Run from the repo root:
 
     uv run uvicorn app.api:app --host 0.0.0.0 --port 8000
+    (on the LinuxONE container:  PYTHONPATH=$PWD uvicorn app.api:app --host 0.0.0.0 --port 8000)
 
-Data and model folders default to data/model_input and models; override with
-OUTAGE_DATA_DIR / OUTAGE_OUT_DIR, e.g.
-    OUTAGE_DATA_DIR=data/model_input OUTAGE_OUT_DIR=models uv run uvicorn app.api:app --port 8000
-(On Windows PowerShell:  $env:OUTAGE_DATA_DIR="data/model_input"; $env:OUTAGE_OUT_DIR="models"; uv run uvicorn app.api:app --port 8000)
+It scores every state with the trained model and keeps the results in memory; requests are
+answered from there, so they never wait for the model. Scores are recomputed in the
+background every OUTAGE_REFRESH_SECONDS (default 600) from the CSVs in OUTAGE_DATA_DIR
+(default data/model_input/real), so fresh data is picked up without a restart.
 
 Endpoints
-  GET /risk            risk for every region (JSON list)
-  GET /risk/{region}   one region, e.g. /risk/zulia
-  GET /health          is the model loaded, how fresh is the data
-  GET /docs            interactive documentation (open in a browser)
-
-Results are recomputed from your CSV files at most every OUTAGE_REFRESH_SECONDS (default 600).
+  GET /                              the Outage Alert website (Outage-Alert-Website/dist)
+  GET /health                        model loaded?, scoring device (nnpa = Telum), data freshness
+  GET /v1/regions                    every state, for the map (ISO codes, e.g. VE-S = Táchira)
+  GET /v1/prediction?region=VE-A     one state, in the apps' Prediction format
+  GET /docs                          interactive documentation
 """
 import os
 import threading
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from src.features import build_dataset
 from src.model import OutageModel
+from src.regions import BY_ISO
+from src.serving import build_snapshot
 
-DATA_DIR = os.path.expanduser(os.environ.get("OUTAGE_DATA_DIR", "data/model_input"))
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = os.path.expanduser(os.environ.get("OUTAGE_DATA_DIR", "data/model_input/real"))
 OUT_DIR = os.path.expanduser(os.environ.get("OUTAGE_OUT_DIR", "models"))
 REFRESH_SECONDS = int(os.environ.get("OUTAGE_REFRESH_SECONDS", "600"))
+WEBSITE_DIR = ROOT / "Outage-Alert-Website" / "dist"
 
 MODEL = OutageModel.load(OUT_DIR)            # loaded once, when the server starts
-app = FastAPI(title="Venezuela power-outage risk")
+app = FastAPI(title="Outage Alert: Venezuela power-outage risk", version="1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
-_cache = {"time": 0.0, "rows": [], "data_through": None}
+_state = {"regions": [], "by_id": {}, "computed_at": None, "last_error": None}
 _lock = threading.Lock()
 
 
 def _refresh():
-    df, _, _ = build_dataset(DATA_DIR, region_map=MODEL.region_map)
-    out = MODEL.score_latest(df)
-    through = out["timestamp"].max()
-    out["timestamp"] = out["timestamp"].astype(str)
-    _cache.update(rows=out.to_dict("records"), time=time.time(), data_through=str(through))
-
-
-def _rows():
+    """Score every state; on failure keep serving the last good results."""
+    try:
+        regions = build_snapshot(MODEL, DATA_DIR)
+    except Exception as e:
+        _state["last_error"] = f"{type(e).__name__}: {e}"
+        print(f"refresh failed, keeping previous results: {_state['last_error']}")
+        return
     with _lock:
-        if not _cache["rows"] or time.time() - _cache["time"] > REFRESH_SECONDS:
-            _refresh()
-        return _cache["rows"]
+        _state.update(regions=regions, by_id={r["region_id"]: r for r in regions},
+                      computed_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                      last_error=None)
 
 
-@app.get("/risk")
-def all_regions():
-    return _rows()
+def _refresh_forever():
+    while True:
+        time.sleep(REFRESH_SECONDS)
+        _refresh()
 
 
-@app.get("/risk/{region}")
-def one_region(region: str):
-    for row in _rows():
-        if row["region"] == region.strip().lower():
-            return row
-    raise HTTPException(status_code=404, detail=f"unknown region '{region}'")
+_refresh()                                   # first results before serving any request
+threading.Thread(target=_refresh_forever, daemon=True).start()
 
 
 @app.get("/health")
 def health():
-    _rows()
-    return {"status": "ok", "regions": len(_cache["rows"]), "data_through": _cache["data_through"],
-            "horizon_rows": MODEL.horizon}
+    regions = _state["regions"]
+    scored = [r for r in regions if r.get("status") == "ok"]
+    return {
+        "status": "ok" if scored else "no_data",
+        "scoring_device": MODEL.nn.device,   # "nnpa" = Telum AI accelerator
+        "regions_scored": len(scored),
+        "regions_total": len(regions),
+        "computed_at": _state["computed_at"],
+        "data_through": max((r["data_through"] for r in scored), default=None),
+        "horizon_hours": MODEL.horizon,
+        "refresh_seconds": REFRESH_SECONDS,
+        "last_error": _state["last_error"],
+    }
+
+
+@app.get("/v1/regions")
+def regions():
+    """Every state, including those without enough data (status 'insufficient_data')."""
+    return _state["regions"]
+
+
+@app.get("/v1/prediction")
+def prediction(region: str = Query(..., description="ISO code, e.g. VE-A for Distrito Capital")):
+    code = region.strip().upper()
+    if code not in BY_ISO:
+        raise HTTPException(status_code=404, detail=f"unknown region '{region}' (use an ISO code like VE-A)")
+    record = _state["by_id"].get(code)
+    if record is None or record.get("status") != "ok":
+        raise HTTPException(status_code=404, detail=f"not enough data to forecast {BY_ISO[code][1]}")
+    return record
+
+
+# The website last, so the API routes above take precedence over its files
+if WEBSITE_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=WEBSITE_DIR, html=True), name="website")
