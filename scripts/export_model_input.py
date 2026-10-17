@@ -26,7 +26,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from calibrate import DROP_THRESHOLD, WEATHER_PATH, load_connectivity_ratio
+from calibrate import DROP_THRESHOLD, IODA_PATH, WEATHER_PATH, load_connectivity_ratio
 
 ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC_PATH = ROOT / "data" / "synthetic" / "grid_hourly.csv.gz"
@@ -56,9 +56,9 @@ def export_synthetic(skip):
     }
 
 
-def export_real(skip, start, end=pd.Timestamp.max):
+def export_real(skip, start, end=pd.Timestamp.max, ioda_path=IODA_PATH, weather_path=WEATHER_PATH):
     # Same outage definition as calibration (see scripts/calibrate.py)
-    ratio, _ = load_connectivity_ratio(pd.Timestamp.max)
+    ratio, _ = load_connectivity_ratio(pd.Timestamp.max, path=ioda_path)
     ratio = ratio[(ratio.index >= start) & (ratio.index < end)].drop(columns=list(skip),
                                                                       errors="ignore")
     long = (ratio.rename_axis("timestamp").reset_index()
@@ -67,7 +67,7 @@ def export_real(skip, start, end=pd.Timestamp.max):
     print(f"  real connectivity missing for {missing:.1%} of state-hours "
           "(counted as no outage, connectivity left blank)")
 
-    weather = pd.read_csv(WEATHER_PATH, usecols=["state", "timestamp_vet", "heat_index_c"],
+    weather = pd.read_csv(weather_path, usecols=["state", "timestamp_vet", "heat_index_c"],
                           parse_dates=["timestamp_vet"])
     weather = weather[(weather.timestamp_vet >= start) & (weather.timestamp_vet < end)
                       & ~weather.state.isin(skip)].dropna()

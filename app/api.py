@@ -7,7 +7,8 @@ api.py - the backend for Outage Alert. Run from the repo root:
 It scores every state with the trained model and keeps the results in memory; requests are
 answered from there, so they never wait for the model. Scores are recomputed in the
 background every OUTAGE_REFRESH_SECONDS (default 600) from the CSVs in OUTAGE_DATA_DIR
-(default data/model_input/real), so fresh data is picked up without a restart.
+(default: data/model_input/live, kept fresh by scripts/refresh.py; else data/model_input/real),
+so fresh data is picked up without a restart.
 
 Endpoints
   GET /                              the Outage Alert website (Outage-Alert-Website/dist)
@@ -31,7 +32,9 @@ from src.regions import BY_ISO
 from src.serving import build_snapshot
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = os.path.expanduser(os.environ.get("OUTAGE_DATA_DIR", "data/model_input/real"))
+# Live data from scripts/refresh.py when it exists, else the real test period
+DEFAULT_DATA_DIR = "data/model_input/live" if (ROOT / "data/model_input/live").is_dir() else "data/model_input/real"
+DATA_DIR = os.path.expanduser(os.environ.get("OUTAGE_DATA_DIR", DEFAULT_DATA_DIR))
 OUT_DIR = os.path.expanduser(os.environ.get("OUTAGE_OUT_DIR", "models"))
 REFRESH_SECONDS = int(os.environ.get("OUTAGE_REFRESH_SECONDS", "600"))
 WEBSITE_DIR = ROOT / "Outage-Alert-Website" / "dist"
@@ -79,6 +82,7 @@ def health():
         "regions_total": len(regions),
         "computed_at": _state["computed_at"],
         "data_through": max((r["data_through"] for r in scored), default=None),
+        "data_dir": DATA_DIR,
         "horizon_hours": MODEL.horizon,
         "refresh_seconds": REFRESH_SECONDS,
         "last_error": _state["last_error"],

@@ -44,9 +44,9 @@ HEAT_PRIOR_DAYS = 50  # a state's own heat effect counts fully only with many ou
                       # with fewer it is pulled toward the national value
 
 
-def load_connectivity_ratio(until):
+def load_connectivity_ratio(until, path=IODA_PATH):
     """Hourly connectivity / best recent level, as an (hour x state) table in Venezuela time."""
-    df = pd.read_csv(IODA_PATH, usecols=["state", "datasource", "timestamp_vet", "value"],
+    df = pd.read_csv(path, usecols=["state", "datasource", "timestamp_vet", "value"],
                      parse_dates=["timestamp_vet"])
     df = df[(df.datasource == "ping-slash24") & (df.timestamp_vet < until)]
     df["hour"] = df.timestamp_vet.dt.floor("h")
