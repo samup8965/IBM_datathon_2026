@@ -17,3 +17,8 @@ logs/
 # Secrets
 .env
 *token*
+
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+*.xcuserstate
