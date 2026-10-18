@@ -1,11 +1,11 @@
 :root {
-  --ink: #14211d;
-  --muted: #5d6f68;
-  --line: #e2e8e5;
-  --bg: #f3f5f4;
+  --ink: #0f1b3d;
+  --muted: #5a6380;
+  --line: #e1e6f0;
+  --bg: #f4f6fb;
   --card: #ffffff;
-  --brand: #123b35;
-  --accent: #0f7a5c;
+  --brand: #002878;
+  --accent: #002878;
   --radius: 18px;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
@@ -19,6 +19,14 @@
 body {
   margin: 0;
   background: var(--bg);
+}
+
+/* Venezuelan flag stripe: yellow, blue, red */
+body:before {
+  content: "";
+  display: block;
+  height: 5px;
+  background: linear-gradient(90deg, #febe04 0 33.34%, #002878 33.34% 66.67%, #d71920 66.67%);
 }
 
 button {
@@ -58,7 +66,7 @@ button {
   height: 40px;
   border-radius: 12px;
   background: var(--brand);
-  color: #c9f2df;
+  color: #febe04;
   font-size: 20px;
   font-weight: 700;
 }
@@ -66,7 +74,13 @@ button {
 .brand b {
   display: block;
   font-size: 18px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  color: var(--brand);
+}
+
+.brand b span {
+  color: #febe04;
 }
 
 .brand small {
@@ -106,8 +120,8 @@ button {
 
 .pill.live {
   color: var(--accent);
-  border-color: #a9d9c3;
-  background: #ecf7f1;
+  border-color: #b9c7e6;
+  background: #eaf0fb;
 }
 
 .pill.live .dot {
@@ -115,9 +129,9 @@ button {
 }
 
 .pill.demo {
-  color: #8a6205;
-  border-color: #f1dfa8;
-  background: #fff8e6;
+  color: #7a5900;
+  border-color: #f7d77a;
+  background: #fff7dc;
 }
 
 @keyframes pulse {
@@ -142,7 +156,7 @@ button {
 }
 
 .ghost:hover {
-  border-color: #c6d2cd;
+  border-color: #c3cce0;
 }
 
 /* ------------------------------------------------------------ headline */
@@ -212,7 +226,7 @@ h1 {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: var(--k, #9aa8a2);
+  background: var(--k, #a5adc2);
 }
 
 .kpi strong {
@@ -243,9 +257,9 @@ h1 {
   gap: 12px;
   margin-bottom: 18px;
   padding: 10px 14px;
-  border: 1px solid #f1dfa8;
+  border: 1px solid #f7d77a;
   border-radius: 14px;
-  background: #fff8e6;
+  background: #fff7dc;
   font-size: 13px;
 }
 
@@ -266,7 +280,7 @@ h1 {
 .demo-bar .link {
   border: 0;
   background: none;
-  color: #6d5408;
+  color: #6b4f00;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -281,11 +295,11 @@ h1 {
   width: 22px;
   height: 5px;
   border-radius: 9px;
-  background: #e6dcc0;
+  background: #f3e3a8;
 }
 
 .steps i.on {
-  background: #b07a06;
+  background: #e0a300;
 }
 
 /* ------------------------------------------------------------ cards */
@@ -349,7 +363,7 @@ h1 {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: linear-gradient(180deg, #eaf2f6 0%, #f3f6f5 100%);
+  background: linear-gradient(180deg, #e6eefa 0%, #f3f6fb 100%);
 }
 
 .map-wrap svg {
@@ -378,14 +392,14 @@ h1 {
 }
 
 .sea {
-  fill: #7f9aa6;
+  fill: #7b8db3;
   font-size: 12px;
   font-style: italic;
   letter-spacing: 0.3em;
 }
 
 .map-label {
-  fill: #2d3d37;
+  fill: #1d2a52;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -470,7 +484,7 @@ h1 {
 }
 
 .gauge .track {
-  stroke: #edf1ef;
+  stroke: #eceff6;
 }
 
 .badge {
@@ -515,8 +529,8 @@ h1 {
   padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #f4f7f5;
-  color: #33463f;
+  background: #f3f5fa;
+  color: #2f3a5c;
   font-size: 12px;
 }
 
@@ -530,7 +544,7 @@ h1 {
 .condition {
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f5f8f6;
+  background: #f4f6fb;
 }
 
 .condition span {
@@ -549,7 +563,7 @@ h1 {
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: #eef2f0;
+  background: #eceff6;
 }
 
 .tabs button {
@@ -605,7 +619,7 @@ h1 {
   margin-top: 14px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f5f8f6;
+  background: #f4f6fb;
   font-size: 13px;
 }
 
@@ -621,8 +635,8 @@ h1 {
   margin: 12px 0 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #f5f8f6;
-  color: #3f524b;
+  background: #f4f6fb;
+  color: #3b4566;
   font-size: 12.5px;
   line-height: 1.5;
 }
@@ -671,7 +685,7 @@ h1 {
 
 .rank-row:hover,
 .rank-row.selected {
-  background: #f1f5f3;
+  background: #eef2f9;
 }
 
 .rank-row.selected .rank-name {
@@ -682,7 +696,7 @@ h1 {
   height: 8px;
   overflow: hidden;
   border-radius: 99px;
-  background: #eef2f0;
+  background: #eceff6;
 }
 
 .bar i {

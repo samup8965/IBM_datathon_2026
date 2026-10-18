@@ -7,7 +7,7 @@ const modeButton = document.querySelector("#mode");
 // One colour per risk level: Low, Moderate, Severe, Critical
 const COLORS = ["#0f7a5c", "#a87304", "#c4541f", "#b8283f"]; // text and accents
 const FILLS = ["#8cc7ab", "#efd27f", "#eb9a66", "#d05a71"]; // map and bars
-const NO_DATA = "#d5dbd8";
+const NO_DATA = "#d8dce6";
 const STABILITY = ["Stable", "Fluctuating", "Unstable", "Highly unstable"];
 const DEMAND = ["Normal", "Elevated", "High", "Peak load"];
 
@@ -115,8 +115,8 @@ function kpis(regions) {
   return `
     <section class="kpis">
       ${tile(`${critical}<small>/ ${scored.length}</small>`, "states at critical risk", COLORS[3])}
-      ${tile(outages, "outages under way now", outages ? COLORS[3] : "#9aa8a2")}
-      ${tile(urgent ?? "—", "medical households to check first", urgent ? COLORS[2] : "#9aa8a2")}
+      ${tile(outages, "outages under way now", outages ? COLORS[3] : "#a5adc2")}
+      ${tile(urgent ?? "—", "medical households to check first", urgent ? COLORS[2] : "#a5adc2")}
       ${tile(newest ? fmtTime(newest) : "Simulated", state.live ? `latest data · ${scoredOn}` : "demo values", "var(--brand)")}
     </section>`;
 }
@@ -188,7 +188,7 @@ function mapCard(regions) {
             ${paths}
             <text x="365" y="45" class="sea" text-anchor="middle">CARIBBEAN SEA</text>
             ${labels}
-            <circle cx="380" cy="140" r="5" fill="#123b35" stroke="white" stroke-width="2" pointer-events="none"/>
+            <circle cx="380" cy="140" r="5" fill="#002878" stroke="white" stroke-width="2" pointer-events="none"/>
             <text x="392" y="135" class="map-label">Caracas</text>
           </g>
         </svg>
@@ -301,8 +301,8 @@ function gauge(percent, color) {
       <circle cx="64" cy="64" r="${radius}" fill="none" stroke="${color}" stroke-width="12"
         stroke-linecap="round" stroke-dasharray="${(percent / 100) * circle} ${circle}"
         transform="rotate(-90 64 64)"/>
-      <text x="64" y="68" text-anchor="middle" font-size="28" font-weight="700" fill="#14211d">${percent}%</text>
-      <text x="64" y="88" text-anchor="middle" font-size="10.5" fill="#5d6f68">next 24 h</text>
+      <text x="64" y="68" text-anchor="middle" font-size="28" font-weight="700" fill="#0f1b3d">${percent}%</text>
+      <text x="64" y="88" text-anchor="middle" font-size="10.5" fill="#5a6380">next 24 h</text>
     </svg>`;
 }
 
@@ -388,7 +388,7 @@ function rankingCard(regions) {
           <span class="rank-name">${escape(r.name)}</span>
           <span class="bar"><i style="width:${known ? r.percent : 0}%;background:${fillOf(r)}"></i></span>
           <span class="rank-pct">${known ? `${r.percent}%` : "—"}</span>
-          <span class="chip" style="--c:${known ? COLORS[r.step] : "#8a9a94"}">${labelOf(r)}</span>
+          <span class="chip" style="--c:${known ? COLORS[r.step] : "#8b93ab"}">${labelOf(r)}</span>
         </button>`;
     })
     .join("");
