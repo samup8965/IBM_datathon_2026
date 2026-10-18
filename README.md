@@ -1,129 +1,164 @@
-# IBM_datathon_2026
-IBM Venezuela idea
+# Outage Alert: 
 
-# Venezuela power-outage risk model
+**A real-time early-warning system for power cuts in Venezuela, running on IBM LinuxONE.**
+For every state, Outage Alert forecasts the chance that a power cut starts in the next 24 hours, explains why, and ranks the households that should be checked on first: people on oxygen, dialysis, nebulisers or insulin.
 
-For every region, the model estimates **the chance that an outage starts within the next 24 hours**
-(configurable) and turns that into a risk level: **Low / Moderate / Severe / Critical**
-(or "Outage in progress"). It combines a **PyTorch neural-network ensemble** with a
-**gradient-boosting model** and uses all five datasets: outage history, temperature, heat index,
-internet connectivity and reservoir height.
+Built from scratch during the **IBM Z Datathon 2026** · Theme 1: **Real-Time AI for Critical Decisions**
 
-## The files
-
-| File | What it is | Do you run it? |
-|---|---|---|
-| `outage_config.py` | Where your files are and what their columns are called | **Edit it** |
-| `train.py` | Teaches the model from your data | Run once (re-run with much more data) |
-| `predict.py` | Current risk for every region -> CSV + JSON | Run whenever your data updates |
-| `serve.py` | Web service so your app can ask for risk levels | Run to power the app |
-| `make_sample_data.py` | Makes FAKE data to test everything works | Run once at the start |
-| `outage_core.py` | The shared machinery | Don't edit |
-| `requirements.txt` | Python packages needed | `pip install -r requirements.txt` |
-
-## 1. Install (once)
-
-```
-pip install -r requirements.txt
-```
-(`fastapi` and `uvicorn` in that file are only needed for `serve.py`.)
-
-## 2. Check everything works with fake data (5 minutes)
-
-```
-python make_sample_data.py --out sample_data
-python train.py   --data-dir sample_data --out-dir sample_model
-python predict.py --data-dir sample_data --out-dir sample_model
-```
-If this runs, your installation is fine. The numbers are invented - ignore them.
-
-## 3. Prepare your real data
-
-Put your CSVs in one folder (e.g. `data/`). Each needs a time column; regional files need a region column.
-
-| File | Columns (default names) | Notes |
-|---|---|---|
-| `history.csv` | `timestamp, region, outage` | one row per region per time step; outage is 0/1; evenly spaced (e.g. hourly) |
-| `temperature.csv` | `timestamp, region, temperature` | any frequency |
-| `heat_index.csv` | `timestamp, region, heat_index` | any frequency |
-| `connectivity.csv` | `timestamp, region, connectivity` | any frequency |
-| `reservoir.csv` | `timestamp, height` | country-level: no region column |
-
-- If your column or file names differ, change them in `outage_config.py` (`path`, `time`, `region`, `cols`).
-- Region names are matched ignoring capitals and spaces ("Zulia" = " zulia"), but spelling must agree across files.
-- If your history is a list of outages with start/end times, use `"format": "events"` (see the comments in the config).
-- **`history.csv` defines the rows.** Its last timestamp is treated as "now", so keep it up to date.
-- Other files may have different frequencies: each row uses the latest reading at or before its time.
-
-## 4. Train
-
-```
-python train.py --data-dir data --out-dir model_out
-```
-It prints (and saves to `model_out/training_report.txt`) a report. Read it before trusting the model:
-
-1. **"matched %" lines** should be close to 100%. Low = region names or dates don't line up between files.
-2. **Model comparison** - the final model should beat "base rate" and "recent outages". If it doesn't, the data has little signal for the chosen horizon.
-3. **"Do the risk levels mean something?"** - the actual outage rate must rise from Low to Critical.
-4. **Per region** - regions with very few outages (`+=` small) are unreliable.
-5. **What drives the predictions** - the top features (also in `feature_importance.csv`); good for your presentation.
-
-Test data is the newest 15% of the timeline and is never used for training or tuning, so those numbers are honest.
-
-## 5. Get current risk levels
-
-```
-python predict.py --data-dir data --out-dir model_out
-```
-Writes `model_out/risk_latest.csv` and `risk_latest.json`. Each region has:
-
-| Field | Meaning |
+| | |
 |---|---|
-| `risk_probability` | calibrated chance an outage starts within the horizon (0-1) |
-| `risk_level` | Low / Moderate / Severe / Critical, or "Outage in progress" |
-| `confidence` | High / Medium / Low, from how many outages that region has in its history |
-| `history_events` | number of separate outages seen for that region |
-| `top_factors` | the features pushing this region's risk up the most (approximate) |
-| `timestamp` | the moment the risk refers to |
+| Architecture and solution flow | [docs/architecture-and-solution-flow.pdf](docs/architecture-and-solution-flow.pdf) |
+| Evidence from our LinuxONE run | [evidence/2026-10-17_2110/SUMMARY.md](evidence/2026-10-17_2110/SUMMARY.md) |
 
-Risk levels compare today with history: Critical = riskier than about 90% of past situations,
-Severe about 70%, Moderate about 40% (adjust `TIER_SHARES` in the config).
+---
 
-## 6. Connect your app
+## Why we built it
 
-Option A (simplest): your app reads `risk_latest.json`. Re-run `predict.py` on a schedule (e.g. hourly) after your data updates.
+In March 2019, during Venezuela's nationwide blackout, Vasco Villalobos died when the power cut stopped his oxygen concentrator. He was one of many. Venezuelans still lose power for hours with no warning, because the state utility publishes no outage schedules or outage data. People on medical devices only find out when it is already too late to prepare.
 
-Option B: a web service.
-```
-OUTAGE_DATA_DIR=data OUTAGE_OUT_DIR=model_out uvicorn serve:app --host 0.0.0.0 --port 8000
-```
-(Windows PowerShell: `$env:OUTAGE_DATA_DIR="data"; $env:OUTAGE_OUT_DIR="model_out"; uvicorn serve:app --port 8000`)
+It was inspired from one of our team members being from that country and whose family endure these outages weekly if not daily.
 
-- `GET /risk` all regions - `GET /risk/zulia` one region - `GET /health` status - `GET /docs` interactive docs
+## What it does
 
-```js
-const regions = await (await fetch("http://localhost:8000/risk")).json();
-```
-```python
-import requests
-regions = requests.get("http://localhost:8000/risk").json()
-```
-
-## Good practice
-
-- Show the **level and the probability together**, and say "chance of an outage starting in the next 24 hours".
-- Show or hint at `confidence`: Low-confidence regions have little outage history.
-- Show `top_factors` as "why" - but call them contributing factors, not proven causes.
-- Re-run `train.py` when you have substantially more data (weeks or months), not for each update.
-
-## Troubleshooting
-
-| Message | Fix |
+| | |
 |---|---|
-| `File not found` | wrong `--data-dir`, or `path` in the config |
-| `missing column(s)` | the names in the config don't match the CSV headers |
-| `matched very few rows` | region spellings or date ranges don't overlap between files |
-| `rows are not evenly spaced` | set `"regularize_freq": "h"` in the config |
-| `split has no outages` | not enough data/outages: use a longer history or a shorter horizon |
-| `No trained model found` | run `train.py` first, and use the same `--out-dir` |
-| `PyTorch is required` | `pip install torch` |
+| **Detect** | Spots outages as they happen from abnormal drops in each state's internet connectivity |
+| **Forecast** | Gives every state the chance an outage starts in the next 24 hours, rescored every 10 minutes |
+| **Explain** | Shows the top factors behind each score, such as recent cuts or a dip in connectivity |
+| **Prioritise** | Ranks households by outage risk × medical vulnerability |
+
+### Theme alignment: Real-Time AI for Critical Decisions
+- **Challenge 5, System Anomaly Detection:** we detect abnormal connectivity drops across 25 states every 10 minutes and forecast the next disruption 24 hours ahead.
+- **Challenge 2, Healthcare Prioritisation:** we rank households so people who depend on medical power are reached first.
+
+## How it works
+
+```
+IODA connectivity (25 states, every 10 min) ─┐
+Open-Meteo weather (hourly)                  ├─► features ─► PyTorch ensemble + gradient boosting ─► blend ─► calibrated risk
+                                             │      (21)          (scored on the Telum II NNPA)             + top factors
+Synthetic households (calibrated) ───────────┴──────────────────────────────────────────────────────────► household priority
+                                                                                                                  │
+                                         FastAPI on IBM LinuxONE (port 8000) ◄──────── in-memory results, rescored every 10 min
+                                                    │
+                                     website + iPhone app (same API)
+```
+
+1. **Data.** IODA active-probing connectivity for all 25 states every 10 minutes (March 2022 onwards) and Open-Meteo hourly temperature, humidity and heat index.
+2. **Labels we created.** No official outage data exists, so an outage is defined as connectivity **below 90% of the state's best level over the past 2 weeks** (a past-only window, so no future data leaks in). Our first definition, "below 80% of the usual level for that hour", hid chronic daily cuts and was replaced. States with fewer than 50 address blocks are flagged as low-signal, leaving **21 states**.
+3. **Features (21 per state-hour).** Recent outages (1, 6 and 24 hours ago; counts over 24 hours and 7 days; hours since the last cut), connectivity (now, 24-hour low, ratio to 7-day median), heat index (now, 24-hour max, 72-hour mean, 24-hour change), hour and month (sine/cosine), weekend, and a learned embedding for each state.
+4. **Hybrid model.** An ensemble of 5 PyTorch neural networks (state embeddings, class weighting, early stopping) blended with scikit-learn gradient boosting. The blend share is chosen on validation data, then calibrated into risk levels: Low, Moderate, Severe, Critical.
+5. **Predicts onsets only.** The model learns from moments when the power is on, so it cannot score well by predicting that an outage simply continues.
+6. **Serving.** An hourly job re-downloads the last 30 days, and FastAPI rescores every 10 minutes and serves cached results, so requests never wait on the model.
+
+## Results on real data the model never saw
+
+Trained on 2022–24, tested on **272,495 state-hours from 2025–26**.
+
+| Approach | PR-AUC | ROC-AUC |
+|---|---|---|
+| Guessing (base rate) | 0.326 | 0.50 |
+| Regional average | 0.407 | 0.60 |
+| Same as yesterday | 0.561 | 0.76 |
+| Recent outages (best simple rule) | 0.665 | 0.78 |
+| **Outage Alert (blend)** | **0.765** | **0.858** |
+
+| Risk level | Actual outage rate in the next 24 h |
+|---|---|
+| Low | 5.8% |
+| Moderate | 12.9% |
+| Severe | 33.0% |
+| Critical | 75.9% |
+
+Alerting at Severe or above catches **87%** of outages (precision 0.55).
+
+**How we got here:** a forecaster trained only on our simulated grid lost to the simple rules (PR-AUC 0.089 vs 0.114), because simulated outages had no warning signs. Training on real data beat them (0.140 vs 0.114 on our first label), and the new label plus the hybrid blend gives the final 0.765 vs 0.665.
+
+## Built on IBM LinuxONE
+
+| Capability | How we used it |
+|---|---|
+| **IBM z17** | LinuxONE Community Cloud instance, machine type 9175, z/VM, Ubuntu on s390x |
+| **Telum II AI accelerator** | The forecaster's neural networks score on the NNPA (`/health` reports `scoring_device: nnpa`) |
+| **Containers** | The pipeline runs in IBM's AI/ML Docker image (Python 3.12, PyTorch 2.11 with NNPA support, scikit-learn 1.9) |
+| **Compute** | Data refresh, training and scoring all run on the z17 |
+| **Security** | SSH keys, a custom Jupyter token, ports 38888 (Jupyter) and 8000 (API) opened in the firewall, no external AI services, aggregated state-level data only |
+| **Open source** | PyTorch, scikit-learn, pandas, NumPy, FastAPI, uvicorn |
+
+**Telum II benchmarks on our z17** (from `evidence/.../SUMMARY.md`):
+
+| Workload | CPU | NNPA | Speed-up |
+|---|---|---|---|
+| Our forecaster, 50,000 state-hours | 102.4 ms | 78.6 ms | **1.3×** |
+| Test network (MLP), batch of 4,096 | 1.49 ms | 0.14 ms | **10.6×** |
+| LSTM, batch of 4,096 | 739 ms | 768 ms | 0.96× |
+
+The LSTM got no speed-up, so we kept the feed-forward ensemble. TensorFlow's zDNN plugin was not active in our container, so we used PyTorch, which reached the NNPA directly. NNPA results differ from the CPU's by at most 0.0013, as expected from the accelerator's 16-bit arithmetic, which shows the NNPA did the work.
+
+## What is real and what is simulated
+
+| | Data | Status |
+|---|---|---|
+| **Forecaster** | Real IODA connectivity and Open-Meteo weather | Live |
+| **Household priority** | 5,000 **synthetic** households (real medical data is private), multiplied by the real forecaster risk | Live |
+| **Simulated grid** (reservoir, plant failures, rationing) | Synthetic, calibrated on real 2022–24 patterns | Built and tested; not used for forecasts. Next: what-if planning |
+
+## Run it
+
+**On LinuxONE** (inside IBM's AI/ML container):
+```bash
+bash scripts/run_on_linuxone.sh       # generate → export → train → predict, about 6 minutes
+bash scripts/serve_on_linuxone.sh     # hourly data refresh + website and API on port 8000
+bash scripts/collect_evidence.sh      # writes evidence/<date>/SUMMARY.md
+```
+
+**On a laptop:**
+```bash
+uv sync                               # package versions pinned to match the server
+uv run python scripts/download_ioda.py
+uv run python scripts/download_weather.py
+```
+Then follow the same steps as `scripts/run_on_linuxone.sh`.
+
+### API
+
+| Endpoint | Returns |
+|---|---|
+| `GET /` | The Outage Alert website |
+| `GET /health` | Model status, scoring device (`nnpa` = Telum), data freshness |
+| `GET /v1/regions` | Every state for the map (ISO codes, e.g. `VE-S` = Táchira) |
+| `GET /v1/prediction?region=VE-A` | One state, in the app's format |
+| `GET /v1/households?region=VE-S` | Households to check on first |
+| `GET /v1/households/summary` | Medical-dependent households and priority tiers per state |
+| `GET /docs` | Interactive API documentation |
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| `scripts/` | Data download, calibration, simulation, export, training, prediction, LinuxONE run, serve and evidence scripts |
+| `src/` | Features, model, households, regions, serving, Telum benchmark |
+| `app/api.py` | FastAPI service: website + `/v1` API |
+| `Outage-Alert-Website/` | Website (built into `dist/`) |
+| `OutageAlert/` | iPhone app (SwiftUI) |
+| `notebooks/` | Exploration, training and LinuxONE demo notebooks |
+| `docs/` | Architecture and solution flow |
+| `evidence/` | Output from our runs on the z17 |
+
+## Responsible AI and limits
+- Every score shows its top factors; risk levels are calibrated on held-out data.
+- No personal data is used: households are synthetic and all signals are state-level.
+- Internet drops are a proxy for power cuts; forecasts are per state, not per street, and less accurate where outages are rare.
+- The system advises people to prepare. It never switches anything off.
+
+## What comes next
+- IBM Granite on LinuxONE for plain-language Spanish advice (generative + predictive AI)
+- SMS and WhatsApp alerts for people without the app
+- Real reservoir and rainfall data, and what-if planning for clinics and NGOs
+- Cross-checking outages against NASA night-lights imagery
+
+## Data sources and credits
+- **IODA**, Internet Outage Detection and Analysis, Georgia Tech: connectivity signals (Copyright Georgia Tech Research Corporation; raw data is not redistributed in this repo)
+- **Open-Meteo**: weather data (CC BY 4.0)
+- **geoBoundaries**: Venezuela state boundaries (CC BY 3.0 IGO)
+- News reports cited in our deck: El Cooperante, Reuters, Euronews, AFP, Global Galicia, El Siglo
